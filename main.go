@@ -1,15 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/tidwall/gjson"
-	"io"
-	"net/http"
-	"net/url"
 	"parseScope/database"
 	"parseScope/stats"
-	"regexp"
 	"sync"
 	"time"
 )
@@ -93,91 +87,91 @@ func printer(ch <-chan playerStats, chDone chan<- bool, db *database.Base) {
 	chDone <- true
 }
 
-func funTest() {
-	//url_ := "https://coding.tools/my-ip-address"
-	//
-	//jsonStr := `{"queryIp":"188.227.9.18"}`
-	//
-	//req, err := http.NewRequest("POST", url_, bytes.NewBuffer([]byte(jsonStr)))
-	//if err != nil {
-	//	panic(err)
-	//}
-	//req.Header.Set("Content-Type", "application/json")
-	//
-	//client := &http.Client{}
-	//resp, err := client.Do(req)
-	//
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//defer resp.Body.Close()
-	//
-	//body, _ := io.ReadAll(resp.Body)
-	//fmt.Println(string(body))
-	//data := []byte(`{"queryIp":"188.227.9.18"}`)
-	data := []byte(`queryIp=188.227.9.18`)
-	r := bytes.NewReader(data)
-	resp, err := http.Post("https://coding.tools/my-ip-address", "application/json", r)
-	if err != nil {
-		fmt.Println(err)
-	}
-	body, _ := io.ReadAll(resp.Body)
-	fmt.Println(string(body))
-}
-
-func getIP(prx string) string {
-	tmpUrl := "https://api.ipify.org?format=json"
-
-	proxyUrl, _ := url.Parse(prx)
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxyUrl),
-		},
-	}
-
-	req, err := http.NewRequest("GET", tmpUrl, nil)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
-	//req.Header.Add("User-Agent", )
-
-	response, err := httpClient.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	defer response.Body.Close()
-
-	body, _ := io.ReadAll(response.Body)
-	resp := gjson.ParseBytes(body)
-
-	return resp.Get("ip").String()
-
-}
-
-func parseInfo(resp string) { //map[string][]string {
-	var result []string
-	re := regexp.MustCompile(`/geoip/"/>(.*?)</a>`)
-	m := re.FindStringSubmatch(resp)
-	if len(m) > 0 {
-		result = append(result, m[1])
-	}
-
-	re = regexp.MustCompile(`<i class="ip-icon-small ip-icon-device-desktop"></i>\s*<div class="(.*?)">`)
-	m = re.FindStringSubmatch(resp)
-	if len(m) > 0 {
-		re = regexp.MustCompile(fmt.Sprintf(`class="%s">\s*(.*?)\s*<`, m[1]))
-		for _, m = range re.FindAllStringSubmatch(resp, -1) {
-			result = append(result, m[1])
-		}
-	}
-
-	fmt.Println(result)
-}
+//func funTest() {
+//	//url_ := "https://coding.tools/my-ip-address"
+//	//
+//	//jsonStr := `{"queryIp":"188.227.9.18"}`
+//	//
+//	//req, err := http.NewRequest("POST", url_, bytes.NewBuffer([]byte(jsonStr)))
+//	//if err != nil {
+//	//	panic(err)
+//	//}
+//	//req.Header.Set("Content-Type", "application/json")
+//	//
+//	//client := &http.Client{}
+//	//resp, err := client.Do(req)
+//	//
+//	//if err != nil {
+//	//	panic(err)
+//	//}
+//	//
+//	//defer resp.Body.Close()
+//	//
+//	//body, _ := io.ReadAll(resp.Body)
+//	//fmt.Println(string(body))
+//	//data := []byte(`{"queryIp":"188.227.9.18"}`)
+//	data := []byte(`queryIp=188.227.9.18`)
+//	r := bytes.NewReader(data)
+//	resp, err := http.Post("https://coding.tools/my-ip-address", "application/json", r)
+//	if err != nil {
+//		fmt.Println(err)
+//	}
+//	body, _ := io.ReadAll(resp.Body)
+//	fmt.Println(string(body))
+//}
+//
+//func getIP(prx string) string {
+//	tmpUrl := "https://api.ipify.org?format=json"
+//
+//	proxyUrl, _ := url.Parse(prx)
+//
+//	httpClient := &http.Client{
+//		Transport: &http.Transport{
+//			Proxy: http.ProxyURL(proxyUrl),
+//		},
+//	}
+//
+//	req, err := http.NewRequest("GET", tmpUrl, nil)
+//	if err != nil {
+//		fmt.Println(err)
+//		return ""
+//	}
+//	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
+//	//req.Header.Add("User-Agent", )
+//
+//	response, err := httpClient.Do(req)
+//	if err != nil {
+//		fmt.Println(err)
+//		return ""
+//	}
+//	defer response.Body.Close()
+//
+//	body, _ := io.ReadAll(response.Body)
+//	resp := gjson.ParseBytes(body)
+//
+//	return resp.Get("ip").String()
+//
+//}
+//
+//func parseInfo(resp string) { //map[string][]string {
+//	var result []string
+//	re := regexp.MustCompile(`/geoip/"/>(.*?)</a>`)
+//	m := re.FindStringSubmatch(resp)
+//	if len(m) > 0 {
+//		result = append(result, m[1])
+//	}
+//
+//	re = regexp.MustCompile(`<i class="ip-icon-small ip-icon-device-desktop"></i>\s*<div class="(.*?)">`)
+//	m = re.FindStringSubmatch(resp)
+//	if len(m) > 0 {
+//		re = regexp.MustCompile(fmt.Sprintf(`class="%s">\s*(.*?)\s*<`, m[1]))
+//		for _, m = range re.FindAllStringSubmatch(resp, -1) {
+//			result = append(result, m[1])
+//		}
+//	}
+//
+//	fmt.Println(result)
+//}
 
 //func getInfo(prx string) []byte {
 //	tmpUrl := "https://2ip.ru/"

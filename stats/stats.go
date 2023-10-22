@@ -2,7 +2,6 @@ package stats
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"time"
 )
 
@@ -53,7 +51,7 @@ func requestStats(player, room string) (string, error) {
 	proxyUrl, _ := url.Parse(proxy())
 
 	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 15 * time.Second,
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(proxyUrl),
 		},
@@ -123,51 +121,51 @@ func timeTrack(start time.Time, name string) {
 	fmt.Printf("%s заняло %s\n", name, time.Since(start))
 }
 
-func GetInfoIP() (string, error) {
-	for count := 0; count < 10; count++ {
-		result, err := requestInfo()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		reg, _ := regexp.Compile("{.*}")
-		result = reg.FindString(result)
-		//println(result)
-
-		return result, err
-	}
-	return "", errors.New("не удалось получить ответ по истечении 10 попыток")
-}
-
-func requestInfo() (string, error) {
-	tmpUrl := "https://coding.tools/my-ip-address"
-
-	proxyUrl, err := url.Parse(proxy())
-	if err != nil {
-		fmt.Println(err)
-		return "", err
-	}
-
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxyUrl),
-		},
-	}
-
-	response, err := httpClient.Post(tmpUrl, "application/json", nil) //bytes.NewBuffer([]byte("queryIp=''"))
-	if err != nil {
-		return "", err
-	}
-
-	//response, err := httpClient.Do(req)
-	//if err != nil {
-	//	return "", err
-	//}
-	defer response.Body.Close()
-
-	body, _ := io.ReadAll(response.Body)
-	fmt.Println(string(body))
-	return string(body), nil
-}
+//func GetInfoIP() (string, error) {
+//	for count := 0; count < 10; count++ {
+//		result, err := requestInfo()
+//		if err != nil {
+//			fmt.Println(err)
+//			continue
+//		}
+//
+//		reg, _ := regexp.Compile("{.*}")
+//		result = reg.FindString(result)
+//		//println(result)
+//
+//		return result, err
+//	}
+//	return "", errors.New("не удалось получить ответ по истечении 10 попыток")
+//}
+//
+//func requestInfo() (string, error) {
+//	tmpUrl := "https://coding.tools/my-ip-address"
+//
+//	proxyUrl, err := url.Parse(proxy())
+//	if err != nil {
+//		fmt.Println(err)
+//		return "", err
+//	}
+//
+//	httpClient := &http.Client{
+//		Timeout: 10 * time.Second,
+//		Transport: &http.Transport{
+//			Proxy: http.ProxyURL(proxyUrl),
+//		},
+//	}
+//
+//	response, err := httpClient.Post(tmpUrl, "application/json", nil) //bytes.NewBuffer([]byte("queryIp=''"))
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	//response, err := httpClient.Do(req)
+//	//if err != nil {
+//	//	return "", err
+//	//}
+//	defer response.Body.Close()
+//
+//	body, _ := io.ReadAll(response.Body)
+//	fmt.Println(string(body))
+//	return string(body), nil
+//}
