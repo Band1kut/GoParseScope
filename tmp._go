@@ -1,0 +1,96 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"github.com/tidwall/gjson"
+	"io"
+	"net/http"
+	"net/url"
+	"parseScope/db"
+	"sync"
+	"time"
+)
+
+func main() {
+	wg := sync.WaitGroup{}
+	ch := make(chan string)
+	chDone := make(chan bool)
+
+	database := db.InitDB("test.db")
+	db.CreateTable(database)
+
+	go run(database, ch, chDone)
+
+	for i := 0; i < 100; i++ {
+		time.Sleep(1 * time.Millisecond)
+		wg.Add(1)
+		go getIP(ch, &wg)
+
+	}
+
+	wg.Wait()
+	close(ch)
+
+	select {
+	case <-chDone:
+		database.Close()
+	}
+
+}
+
+func run(database *sql.DB, ch <-chan string, chDone chan bool) {
+	i := 0
+	for ip := range ch {
+		i++
+		db.InsertIp(database, ip)
+		fmt.Println(i, ip)
+	}
+	chDone <- true
+}
+
+func getIP(ch chan<- string, wg *sync.WaitGroup) {
+	defer timeTrack(time.Now(), "getIP")
+	defer wg.Done()
+	tmpUrl := "https://google.com/" //"https://api.ipify.org?format=json" "https://example.com/"
+
+	proxyUrl, _ := url.Parse("http://46acd86e65:33000997@185.156.177.59:8377") //"http://46acd86e65:33000997_country-ru@185.156.177.59:8377"
+
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		},
+	}
+
+	req, err := http.NewRequest("GET", tmpUrl, nil)
+	if err != nil {
+		fmt.Println(err)
+		ch <- ""
+	}
+	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
+	req.Header.Add("User-Agent", add_res.Get())
+
+	response, err := httpClient.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		ch <- ""
+		return
+	}
+	defer response.Body.Close()
+
+	body, _ := io.ReadAll(response.Body)
+	ip := gjson.ParseBytes(body).Get("ip").String()
+	//println(ip)
+
+	ch <- ip
+
+}
+
+func timeTrack(start time.Time, name string) {
+	elapsed := time.Since(start)
+	fmt.Printf("%s заняло %s\n", name, elapsed)
+}
+
+//https://pingtool.org/exec.php?e=5&h=77.222.228.19&p=&l=5&mac=0&s=F45A0AAPcNXNbSMRzfpFktWE
+//https://pingtool.org/exec.php?e=5&h=188.227.9.18&p=&l=5&mac=0&s=F45A0AAPcNXNbSMRzfpFktWE
