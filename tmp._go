@@ -1,63 +1,81 @@
 package main
 
 import (
-	"database/sql"
+	"bufio"
 	"fmt"
 	"github.com/tidwall/gjson"
 	"io"
 	"net/http"
 	"net/url"
-	"parseScope/db"
-	"sync"
+	"os"
 	"time"
 )
 
+var t string
+var used = make(map[string]bool)
+
 func main() {
-	wg := sync.WaitGroup{}
-	ch := make(chan string)
-	chDone := make(chan bool)
 
-	database := db.InitDB("test.db")
-	db.CreateTable(database)
+	//ps, _ := readLines("proxies.txt")
+	//for _, px := range ps {
+	//	px = "http://" + px
+	//	fmt.Println(px)
+	//	for i := 0; i < 10; i++ {
+	//		time.Sleep(200 * time.Millisecond)
+	//		fmt.Println(getIP(px), t)
+	//	}
+	//}
 
-	go run(database, ch, chDone)
-
-	for i := 0; i < 100; i++ {
-		time.Sleep(1 * time.Millisecond)
-		wg.Add(1)
-		go getIP(ch, &wg)
-
+	cl := getClient()
+	cl2 := getClient()
+	cl3 := getClient()
+	cl4 := getClient()
+	for i := 0; i < 5; i++ {
+		time.Sleep(200 * time.Millisecond)
+		fmt.Println(proxyIP(cl), t)
 	}
 
-	wg.Wait()
-	close(ch)
-
-	select {
-	case <-chDone:
-		database.Close()
+	for i := 0; i < 5; i++ {
+		time.Sleep(200 * time.Millisecond)
+		fmt.Println(proxyIP(cl2), t)
+	}
+	for i := 0; i < 5; i++ {
+		time.Sleep(200 * time.Millisecond)
+		fmt.Println(proxyIP(cl3), t)
 	}
 
+	for i := 0; i < 5; i++ {
+		time.Sleep(200 * time.Millisecond)
+		fmt.Println(proxyIP(cl4), t)
+	}
+	//defer timeTrack(time.Now(), "main")
+	//var l []*proxy
+	//for i := 0; i < 5; i++ {
+	//	fmt.Println(i)
+	//	l = append(l, newProxy())
+	//}
+	//
+	//for _, p := range l {
+	//	fmt.Println(p.ip)
+	//}
+	//fmt.Println(t)
 }
 
-func run(database *sql.DB, ch <-chan string, chDone chan bool) {
-	i := 0
-	for ip := range ch {
-		i++
-		db.InsertIp(database, ip)
-		fmt.Println(i, ip)
-	}
-	chDone <- true
+func timeTrack(start time.Time, name string) {
+	_ = name
+	//fmt.Printf("%s заняло %s\n", name, time.Since(start))
+	t = time.Since(start).String()
 }
 
-func getIP(ch chan<- string, wg *sync.WaitGroup) {
-	defer timeTrack(time.Now(), "getIP")
-	defer wg.Done()
-	tmpUrl := "https://google.com/" //"https://api.ipify.org?format=json" "https://example.com/"
+func getIP(prx string) string {
+	defer timeTrack(time.Now(), "main")
+	tmpUrl := "https://api.ipify.org?format=json"
+	//tmpUrl := "https://api.2ip.ua/geo.json?ip="
 
-	proxyUrl, _ := url.Parse("http://46acd86e65:33000997@185.156.177.59:8377") //"http://46acd86e65:33000997_country-ru@185.156.177.59:8377"
+	proxyUrl, _ := url.Parse(prx)
 
 	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 15 * time.Second,
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(proxyUrl),
 		},
@@ -66,31 +84,98 @@ func getIP(ch chan<- string, wg *sync.WaitGroup) {
 	req, err := http.NewRequest("GET", tmpUrl, nil)
 	if err != nil {
 		fmt.Println(err)
-		ch <- ""
+		return ""
 	}
 	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
-	req.Header.Add("User-Agent", add_res.Get())
+	//req.Header.Add("User-Agent", )
 
 	response, err := httpClient.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		ch <- ""
-		return
+		return ""
 	}
 	defer response.Body.Close()
 
 	body, _ := io.ReadAll(response.Body)
-	ip := gjson.ParseBytes(body).Get("ip").String()
-	//println(ip)
+	resp := gjson.ParseBytes(body)
 
-	ch <- ip
+	return resp.Get("ip").String() // + " " + resp.Get("country_rus").String()
 
 }
 
-func timeTrack(start time.Time, name string) {
-	elapsed := time.Since(start)
-	fmt.Printf("%s заняло %s\n", name, elapsed)
+func readLines(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
 
-//https://pingtool.org/exec.php?e=5&h=77.222.228.19&p=&l=5&mac=0&s=F45A0AAPcNXNbSMRzfpFktWE
-//https://pingtool.org/exec.php?e=5&h=188.227.9.18&p=&l=5&mac=0&s=F45A0AAPcNXNbSMRzfpFktWE
+func getClient() *http.Client {
+	proxyUrl, _ := url.Parse("http://46acd86e65:33000997_country-cz@185.156.177.59:8377")
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		},
+	}
+	return httpClient
+}
+
+func proxyIP(cl *http.Client) string {
+	defer timeTrack(time.Now(), "main")
+	tmpUrl := "https://api.ipify.org?format=json"
+
+	req, err := http.NewRequest("GET", tmpUrl, nil)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
+	//req.Header.Add("User-Agent", )
+	response, err := cl.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	defer response.Body.Close()
+
+	body, _ := io.ReadAll(response.Body)
+	resp := gjson.ParseBytes(body)
+
+	return resp.Get("ip").String()
+
+}
+
+type proxy struct {
+	client *http.Client
+	ip     string
+}
+
+func newProxy() *proxy {
+	var ip string
+	var cl *http.Client
+	for i := 0; i < 10; i++ {
+		cl = getClient()
+		ip = proxyIP(cl)
+		if used[ip] {
+			continue
+		}
+
+	}
+
+	if cl != nil {
+		return &proxy{
+			client: cl,
+			ip:     ip,
+		}
+	}
+	return nil
+}
