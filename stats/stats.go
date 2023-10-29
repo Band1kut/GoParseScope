@@ -48,7 +48,7 @@ func requestStats(player, room string) (string, error) {
 	defer timeTrack(time.Now(), "requestStats")
 	tmpUrl := fmt.Sprintf("https://sharkscope.com/poker-statistics/networks/%s/players/%s?&Currency=USD", room, player)
 
-	proxyUrl, _ := url.Parse(proxy())
+	proxyUrl, _ := url.Parse(Proxy())
 
 	httpClient := &http.Client{
 		Timeout: 15 * time.Second,
@@ -88,8 +88,9 @@ func userAgent() string {
 	return agentsList[rand.Intn(len(agentsList))]
 }
 
-func proxy() string {
+func Proxy() string {
 	var p = "http://"
+	//var p = ""
 	if len(proxyList) == 1 {
 		p += proxyList[0]
 	} else {
@@ -141,7 +142,7 @@ func timeTrack(start time.Time, name string) {
 //func requestInfo() (string, error) {
 //	tmpUrl := "https://coding.tools/my-ip-address"
 //
-//	proxyUrl, err := url.Parse(proxy())
+//	proxyUrl, err := url.Parse(Proxy())
 //	if err != nil {
 //		fmt.Println(err)
 //		return "", err
